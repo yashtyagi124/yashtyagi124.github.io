@@ -541,6 +541,7 @@
         </div>
       </div>
       <form id="wl">
+        <input type="hidden" name="access_key" value="0c5c98d4-aba2-4331-85fc-5368f11d6f8f">
         <div class="field"><label for="n">Name</label>
           <input id="n" type="text" placeholder="Your name" required autocomplete="name"></div>
         <div class="field"><label for="e">Email</label>
@@ -555,9 +556,9 @@
         <div class="status" id="st" role="status" aria-live="polite"></div>
       </form>
       <div class="sent" id="sent" hidden>
-        <h3>One last step.</h3>
-        <p>Send us these details and you're on the list. If the button doesn't open your mail app,
-          copy them across to <a href="mailto:yashtyagi14314344@gmail.com">yashtyagi14314344@gmail.com</a>.</p>
+        <h3 id="sentTitle">You're on the list!</h3>
+        <p id="sentDesc">Thanks — we've got your details and will be in touch with pricing and lead times.
+          Didn't go through? Email us directly at <a href="mailto:yashtyagi14314344@gmail.com">yashtyagi14314344@gmail.com</a>.</p>
         <pre id="sentBody"></pre>
         <div class="sent-acts">
           <a class="btn btn-primary" id="sentMail" href="#">Open email</a>
@@ -803,11 +804,12 @@ const FRAMES = ["data:image/webp;base64,UklGRvqsAQBXRUJQVlA4WAoAAAAQAAAABwIAfAIA
   next.addEventListener('click', function(){ go(current() + 1); });
   syncDots();
 
-  /* ---- waitlist: composes an email, so the page works on a public link ---- */
+  /* ---- waitlist: submits to Web3Forms; falls back to a pre-filled email if that fails ---- */
   var form = document.getElementById('wl'), st = document.getElementById('st');
   var sent = document.getElementById('sent'), sentBody = document.getElementById('sentBody');
   var sentMail = document.getElementById('sentMail'), sentCopy = document.getElementById('sentCopy');
   var sentBack = document.getElementById('sentBack');
+  var sentTitle = document.getElementById('sentTitle'), sentDesc = document.getElementById('sentDesc');
   var TO = 'yashtyagi14314344@gmail.com';
 
   form.addEventListener('submit', function(ev){
@@ -823,8 +825,38 @@ const FRAMES = ["data:image/webp;base64,UklGRvqsAQBXRUJQVlA4WAoAAAAQAAAABwIAfAIA
     sentBody.textContent = body;
     sentMail.href = 'mailto:' + TO + '?subject=' +
       encodeURIComponent('Clayé waitlist — ' + name) + '&body=' + encodeURIComponent(body);
-    form.hidden = true; sent.hidden = false;
-    st.textContent = ''; st.className = 'status';
+
+    var btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true; st.textContent = 'Sending…'; st.className = 'status';
+
+    var fallback = function(){
+      sentTitle.textContent = 'Almost there.';
+      sentDesc.innerHTML = 'Send us these details and you\'re on the list — tap "Open email" below, or copy them across to ' +
+        '<a href="mailto:' + TO + '">' + TO + '</a>.';
+      form.hidden = true; sent.hidden = false;
+      st.textContent = ''; st.className = 'status'; btn.disabled = false;
+    };
+
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: '0c5c98d4-aba2-4331-85fc-5368f11d6f8f',
+        subject: 'Clayé waitlist — ' + name,
+        name: name, email: email, role: role, message: body
+      })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      btn.disabled = false;
+      if(data && data.success){
+        sentTitle.textContent = "You're on the list!";
+        sentDesc.innerHTML = 'Thanks — we\'ve got your details and will be in touch with pricing and lead times. ' +
+          'Didn\'t go through? Email us directly at <a href="mailto:' + TO + '">' + TO + '</a>.';
+        form.hidden = true; sent.hidden = false;
+        st.textContent = ''; st.className = 'status';
+      } else {
+        fallback();
+      }
+    }).catch(fallback);
   });
 
   sentCopy.addEventListener('click', function(){
