@@ -56,6 +56,34 @@
 }
 </script>
 <style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<script>
+(function(){
+  try{
+    var SB_URL = 'https://ceeqqcllvnwgufbtlgcn.supabase.co';
+    var SB_KEY = 'sb_publishable_utBcy_FDh30Hr8hg3hHXWA_csdo0GcL';
+    var sid = sessionStorage.getItem('claye_sid');
+    if(!sid){
+      sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      sessionStorage.setItem('claye_sid', sid);
+    }
+    fetch(SB_URL + '/rest/v1/page_views', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        path: location.pathname + location.search,
+        referrer: document.referrer || null,
+        session_id: sid,
+        user_agent: navigator.userAgent
+      })
+    }).catch(function(){});
+  } catch(e){}
+})();
+</script>
 <style>
   :root{
     --cream:#F1E6D2;
